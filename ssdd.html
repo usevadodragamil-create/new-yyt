@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Billing Tool - suman saurav jee m</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f3f6fa;
+      color: #333;
+    }
+    .navbar {
+      background: linear-gradient(90deg, #ff7e5f, #feb47b);
+      color: #fff;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+    .navbar h1 { font-size: 20px; margin: 0; letter-spacing: 1px; }
+    .nav-links { display: flex; gap: 15px; }
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .nav-links a:hover,
+    .nav-links a.active { background: rgba(255,255,255,0.25); }
+
+    .tab { display: none; padding: 20px; }
+    .tab.active { display: block; }
+
+    .create-bill h2 { margin-top: 0; color: #444; }
+    .create-bill input { padding: 7px; margin: 5px 10px 5px 0; border-radius: 6px; border: 1px solid #ccc; }
+
+    .content { display: flex; gap: 30px; padding: 0 20px 40px; }
+    .cart, .items {
+      flex: 1; border-radius: 10px; background: #fff; padding: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .cart table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .cart th, .cart td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 14px; }
+    .cart-actions {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 15px;
+    }
+    .cart-actions button {
+      padding: 8px 16px; border: none; border-radius: 6px;
+      cursor: pointer; font-weight: bold;
+      transition: transform 0.2s, background 0.3s;
+    }
+    .cart-actions button:hover { transform: translateY(-2px); }
+    .save-btn { background: #27ae60; color: #fff; }
+    .cancel-btn { background: #e74c3c; color: #fff; }
+
+    .items h3 { margin-top: 0; color: #444; }
+    .items button {
+      margin: 6px; padding: 8px 14px; border: none; border-radius: 8px;
+      background: #3498db; color: #fff; cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .items button:hover { background: #2980b9; transform: scale(1.05); }
+
+    .manage-list li {
+      margin: 5px 0; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #ccc; padding-bottom: 4px;
+    }
+    .manage-list button { margin-left: 5px; padding: 2px 6px; border-radius: 4px; border: none; cursor: pointer; }
+
+    /* Find tab table styling */
+    #find-result table {
+      width: 100%; border-collapse: collapse; margin-top: 10px;
+      background: #fff; border-radius: 8px; overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #find-result th, #find-result td {
+      padding: 10px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px;
+    }
+    #find-result th {
+      background: linear-gradient(90deg, #ff7e5f, #feb47b); color: #fff;
+    }
+    #find-result td button {
+      padding: 6px 12px; border: none; border-radius: 6px;
+      background: #27ae60; color: #fff; cursor: pointer;
+      font-weight: bold; transition: background 0.3s, transform 0.2s;
+    }
+    #find-result td button:hover { background: #2ecc71; transform: translateY(-2px); }
+
+    /* Today summary card */
+    .today-summary {
+      margin-bottom: 15px; padding: 10px; background: #fff; border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Report table */
+    #report-table { width: 100%; border-collapse: collapse; background:#fff; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+    #report-table th, #report-table td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
+    #report-table th { background: linear-gradient(90deg, #ff7e5f, #feb47b); color:#fff; }
+    #report-controls { margin:10px 0; }
+    #report-totals { margin-top:10px; font-weight:bold; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>suman saurav - Billing Tool</h1>
+  <div class="nav-links">
+    <a href="#" class="active" onclick="showTab('home')">Home</a>
+    <a href="#" onclick="showTab('find')">Find Bill</a>
+    <a href="#" onclick="showTab('report')">Report</a>
+    <a href="#" onclick="showTab('manage')">Manage Items</a>
+    <a href="#" onclick="showTab('print-settings')">Print Settings</a>
+  </div>
+</div>
+
+<!-- HOME TAB -->
+<div class="tab active" id="home">
+  <div class="today-summary">
+    <strong>Date & Time:</strong> <span id="current-datetime"></span><br>
+    <strong>Today's Total Sales:</strong> ₹<span id="today-sales">0</span>
+  </div>
+  <div class="create-bill">
+    <h2>Create Bill</h2>
+    <label>Customer Name: <input type="text" id="cust-name"></label>
+    <label>Phone: <input type="text" id="cust-phone"></label>
+  </div>
+  <div class="content">
+    <div class="cart">
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th></tr>
+        </thead>
+        <tbody id="cart-body"></tbody>
+      </table>
+      <div class="cart-actions">
+        <div>
+          <button class="save-btn" onclick="saveBill()">Save & Print</button>
+          <button class="cancel-btn" onclick="clearCart()">Cancel</button>
+        </div>
+        <div>
+          Payment: 
+          <select id="paymode"><option>Cash</option><option>Card</option><option>UPI</option></select>
+        </div>
+        <div><strong id="grand-total">Total: ₹0</strong></div>
+      </div>
+    </div>
+
+    <div class="items">
+      <h3>Items</h3>
+      <div id="item-buttons"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FIND TAB -->
+<div class="tab" id="find">
+  <h2>Find Bill</h2>
+  <input placeholder="Enter Bill No or Mobile No" id="search-bill">
+  <button onclick="findBill()">Search</button>
+  <button onclick="showAllBills()">Show All Bills</button>
+  <div id="find-result"></div>
+</div>
+
+<!-- REPORT TAB -->
+<div class="tab" id="report">
+  <h2>Sales Report</h2>
+  <div id="report-controls">
+    Filter:
+    <button onclick="loadReport('today')">Today</button>
+    <button onclick="loadReport('week')">Week</button>
+    <button onclick="loadReport('month')">Month</button>
+    <button onclick="loadReport('all')">All</button>
+    <button onclick="printReport()">Print Report</button>
+    <button onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div id="report-container"></div>
+  <div id="report-totals"></div>
+</div>
+
+<!-- MANAGE TAB -->
+<div class="tab" id="manage">
+  <h2>Manage Items</h2>
+  <input id="new-item-name" placeholder="Item name">
+  <input id="new-item-price" type="number" placeholder="Price">
+  <button onclick="addItem()">Add Item</button>
+  <ul class="manage-list" id="manage-list"></ul>
+</div>
+
+<!-- PRINT SETTINGS TAB -->
+<div class="tab" id="print-settings">
+  <h2>Print Settings</h2>
+  <label>Template:
+    <select id="print-template">
+      <option value="compact">Compact</option>
+      <option value="detailed">Detailed</option>
+      <option value="logo">Logo + Summary</option>
+    </select>
+  </label>
+  <br><br>
+  <label>Printer:
+    <select id="printer-selection">
+      <option value="any">Any Printer</option>
+      <option value="default">Default Printer</option>
+    </select>
+  </label>
+  <br><br>
+  <button onclick="savePrintSettings()">Save as Default</button>
+  <button onclick="testPrint()">Test Print</button>
+</div>
+
+<script>
+// --- INITIALIZE DATA ---
+let items = JSON.parse(localStorage.getItem('items')||'[]');
+let cart = [];
+let bills = JSON.parse(localStorage.getItem('bills')||'[]');
+let invoiceCounter = parseInt(localStorage.getItem('invoiceCounter')||'1');
+let printSettings = JSON.parse(localStorage.getItem('printSettings')||'{"template":"compact","printer":"any"}');
+
+// --- TAB SWITCH ---
+function showTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  event.target.classList.add('active');
+  if(tab==='report') loadReport('all');
+  if(tab==='manage') renderItems();
+}
+
+// --- ITEMS ---
+function renderItemButtons(){
+  let box = document.getElementById('item-buttons');
+  box.innerHTML='';
+  items.forEach(it=>{
+    let b=document.createElement('button');
+    b.textContent=`${it.name} ₹${it.price}`;
+    b.onclick=()=>addToCart(it.name,it.price);
+    box.appendChild(b);
+  });
+}
+
+function addToCart(name,price){
+  let existing = cart.find(c=>c.name===name);
+  if(existing){ existing.qty++; }
+  else{ cart.push({name,price,qty:1}); }
+  renderCart();
+}
+
+function renderCart(){
+  let tbody=document.getElementById('cart-body');
+  tbody.innerHTML='';
+  let total=0;
+  cart.forEach((c,i)=>{
+    let row=document.createElement('tr');
+    let t = c.qty*c.price; total+=t;
+    row.innerHTML=`<td>${c.name}</td><td>${c.qty}</td><td>${c.price}</td><td>${t}</td><td><button onclick="deleteCartItem(${i})">X</button></td>`;
+    tbody.appendChild(row);
+  });
+  document.getElementById('grand-total').textContent='Total: ₹'+total;
+}
+
+function deleteCartItem(i){
+  if(prompt('Enter passcode to delete:')==='1234'){
+    cart.splice(i,1); renderCart();
+  } else alert('Wrong passcode');
+}
+
+function clearCart(){ cart=[]; renderCart(); }
+
+// --- BILLING ---
+function saveBill(){
+  if(cart.length==0) return alert('Cart empty');
+  let bill = {
+    no: invoiceCounter++,
+    date: new Date().toISOString(),
+    customer: document.getElementById('cust-name').value,
+    phone: document.getElementById('cust-phone').value,
+    payment: document.getElementById('paymode').value,
+    items: cart,
+    total: cart.reduce((s,c)=>s+c.qty*c.price,0)
+  };
+  bills.push(bill);
+  localStorage.setItem('bills',JSON.stringify(bills));
+  localStorage.setItem('invoiceCounter',invoiceCounter);
+  printBill(bill);
+  clearCart();
+  updateTodaySummary();
+}
+
+function printBill(b){
+  // Use saved template & printer settings
+  let template = printSettings.template || 'compact';
+  let win = window.open('','print');
+  let html = `<h2>suman saurav</h2>
+    <p>Bill No: ${b.no}<br>Date: ${new Date(b.date).toLocaleString()}<br>
+    Customer: ${b.customer} (${b.phone})<br>
+    Payment: ${b.payment}</p>
+    <table border=1 cellspacing=0 cellpadding=5>
+      <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+      ${b.items.map(i=>`<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price}</td><td>${i.qty*i.price}</td></tr>`).join('')}
+    </table>
+    <h3>Total: ₹${b.total}</h3>`;
+  win.document.write(html);
+  win.print();
+}
+
+// --- FIND TAB ---
+function renderBillTable(billsArray){
+  if(!billsArray.length){
+    document.getElementById('find-result').innerHTML = '<p>No bills found</p>'; return;
+  }
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>Bill No</th><th>Date</th><th>Customer</th><th>Phone</th>
+        <th>Payment</th><th>Items</th><th>Total</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${billsArray.map(b => `
+        <tr>
+          <td>${b.no}</td>
+          <td>${new Date(b.date).toLocaleString()}</td>
+          <td>${b.customer}</td>
+          <td>${b.phone}</td>
+          <td>${b.payment}</td>
+          <td>${b.items.map(i => `${i.name} x${i.qty}`).join('<br>')}</td>
+          <td>₹${b.total}</td>
+          <td><button onclick='printBill(${JSON.stringify(b)})'>Print</button></td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+  document.getElementById('find-result').innerHTML = html;
+}
+
+function findBill(){
+  let input = document.getElementById('search-bill').value.trim();
+  if(!input) return alert('Enter bill number or mobile number');
+  let result = bills.filter(b => b.no.toString()===input || b.phone.includes(input));
+  renderBillTable(result);
+}
+
+function showAllBills(){ renderBillTable(bills); }
+
+// --- REPORT ---
+function loadReport(filter='all'){
+  let now = new Date();
+  let filtered = bills.filter(b=>{
+    let bDate = new Date(b.date);
+    if(filter==='today') return bDate.toDateString()===now.toDateString();
+    if(filter==='week') {
+      let weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay());
+      return bDate>=weekStart && bDate<=now;
+    }
+    if(filter==='month') return bDate.getMonth()===now.getMonth() && bDate.getFullYear()===now.getFullYear();
+    return true;
+  });
+  // Render table
+  let html = `<table id="report-table">
+    <thead>
+      <tr><th>Bill No</th><th>Date</th><th>Customer</th><th>Phone</th>
+      <th>Payment</th><th>Items</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      ${filtered.map(b=>`<tr>
+        <td>${b.no}</td><td>${new Date(b.date).toLocaleString()}</td><td>${b.customer}</td><td>${b.phone}</td>
+        <td>${b.payment}</td>
+        <td>${b.items.map(i=>i.name+' x'+i.qty).join('<br>')}</td>
+        <td>₹${b.total}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+  document.getElementById('report-container').innerHTML = html;
+
+  // Totals & collection
+  let total = filtered.reduce((s,b)=>s+b.total,0);
+  let cash = filtered.filter(b=>b.payment==='Cash').reduce((s,b)=>s+b.total,0);
+  let card = filtered.filter(b=>b.payment==='Card').reduce((s,b)=>s+b.total,0);
+  let upi = filtered.filter(b=>b.payment==='UPI').reduce((s,b)=>s+b.total,0);
+  document.getElementById('report-totals').innerHTML = `Total: ₹${total} | Cash: ₹${cash} | Card: ₹${card} | UPI: ₹${upi}`;
+}
+
+function printReport(){
+  let content = document.getElementById('report-container').innerHTML + "<br>" + document.getElementById('report-totals').innerHTML;
+  let win = window.open('','print');
+  win.document.write(content); win.print();
+}
+
+function exportCSV(){
+  let rows = [['Bill No','Date','Customer','Phone','Payment','Items','Total']];
+  bills.forEach(b=>{
+    rows.push([b.no,new Date(b.date).toLocaleString(),b.customer,b.phone,b.payment,b.items.map(i=>i.name+' x'+i.qty).join(';'),b.total]);
+  });
+  let csv = rows.map(r=>r.join(',')).join('\n');
+  let blob = new Blob([csv],{type:'text/csv'});
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a'); a.href=url; a.download='sales_report.csv'; a.click();
+}
+
+// --- MANAGE ITEMS ---
+function renderItems(){
+  let ul=document.getElementById('manage-list');
+  ul.innerHTML='';
+  items.forEach((it,i)=>{
+    let li=document.createElement('li');
+    li.innerHTML = `${it.name} - ₹${it.price}<span>
+      <button onclick="editItem(${i})">✏️</button>
+      <button onclick="deleteItem(${i})">🗑️</button></span>`;
+    ul.appendChild(li);
+  });
+  renderItemButtons();
+  localStorage.setItem('items',JSON.stringify(items));
+}
+
+function addItem(){
+  let n=document.getElementById('new-item-name').value;
+  let p=parseFloat(document.getElementById('new-item-price').value);
+  if(!n||!p) return;
+  items.push({name:n,price:p});
+  document.getElementById('new-item-name').value='';
+  document.getElementById('new-item-price').value='';
+  renderItems();
+}
+
+function editItem(i){
+  if(prompt('Passcode:')!=='1234') return alert('Wrong');
+  let n=prompt('New name',items[i].name);
+  let p=parseFloat(prompt('New price',items[i].price));
+  if(n&&p){ items[i].name=n; items[i].price=p; renderItems(); }
+}
+
+function deleteItem(i){
+  if(prompt('Passcode:')==='1234'){ items.splice(i,1); renderItems(); }
+  else alert('Wrong passcode');
+}
+
+// --- PRINT SETTINGS ---
+function savePrintSettings(){
+  printSettings.template = document.getElementById('print-template').value;
+  printSettings.printer = document.getElementById('printer-selection').value;
+  localStorage.setItem('printSettings',JSON.stringify(printSettings));
+  alert('Settings saved!');
+}
+
+function testPrint(){ alert('Test print simulated'); }
+
+// --- TODAY SUMMARY ---
+function updateTodaySummary(){
+  let now = new Date(); document.getElementById('current-datetime').textContent = now.toLocaleString();
+  let todayTotal = bills.filter(b=>new Date(b.date).toDateString()===now.toDateString())
+                        .reduce((s,b)=>s+b.total,0);
+  document.getElementById('today-sales').textContent = todayTotal;
+}
+
+// --- AUTO REFRESH DATETIME ---
+setInterval(updateTodaySummary,1000);
+
+// --- INITIAL RENDER ---
+renderItems();
+updateTodaySummary();
+</script>
+</body>
+</html>
